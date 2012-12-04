@@ -1,6 +1,7 @@
 (in-package #:cl-poker-sim)
 
 (defun flatten (x)
+  (declare (optimize (speed 3) (safety 0) (debug 0)))
   (labels ((rec (x acc)
 	     (cond ((null x) acc)
 		   ((atom x) (cons x acc))
@@ -9,16 +10,12 @@
 		       (rec (cdr x) acc))))))
     (rec x nil)))
 
-(defun nshuffle (s)
-  "Shuffles sequence s"
-  (loop for i from (length s) downto 2
-        do (rotatef (elt s (random i))
-                    (elt s (1- i))))
-  s)
-
 (defun ashuffle (s)
   "Shuffles sequence s"
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type (simple-array fixnum (*)) s))
   (let ((len (length s)))
+    (declare (type fixnum len))
     (loop for i from len downto 2
           do (rotatef (aref s (random i))
                       (aref s (1- i)))))
@@ -36,22 +33,24 @@
      (combl deck nil m))
     hands))
 
-(defun take (n l)
-  (loop for e in l
-        for i from 1 upto n
-        collect e))
-
 (defun atake (n l)
-  (let ((r (make-array n :fill-pointer 0)))
+  "Returns first n elements of array l"
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type fixnum n) (type (simple-array fixnum (*)) l))
+  (let ((r (make-array n :element-type 'fixnum)))
     (loop for i from 0 upto (1- n)
-         do (vector-push (aref l i) r))
+          do (setf (aref r i) (aref l i)))
     r))
 
 (defun alast (n l)
-  (let ((r (make-array n :fill-pointer 0))
+  "Returns last n elements of array l"
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type fixnum n) (type (simple-array fixnum (*)) l))
+  (let ((r (make-array n :element-type 'fixnum))
         (len (1- (length l))))
     (loop for i from len downto (- len n)
-          do (vector-push (aref l i) r))
+          as index from (1- n) downto 0
+          do (setf (aref r index) (aref l i)))
     r))
 
 (defun ppot (hole board)
@@ -113,9 +112,10 @@
   (values win tie lose)))
 
 (defun monte-carlo-sim (n hole noppts)
-  "Monte-carlo sim of n hands using hole cards against noppts oppoents"
-  ;(declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0)))
-  (let* ((cards (make-array 50 :initial-contents (nset-difference (loop for c from 0 upto 51 collect c) hole)))
+  "Monte-carlo sim of n hands using hole cards against noppts opponents"
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+           (type fixnum n noppts))
+  (let* ((cards (make-array 50 :element-type 'fixnum :initial-contents (nset-difference (loop for c from 0 upto 51 collect c) hole)))
          (pp 0) (np 0) (ep 0))
     (loop for i from 1 upto n do
           (let* ((deck (ashuffle cards))
@@ -123,7 +123,9 @@
                  (opsdeck (alast 45 deck))
                  (ophs (map 'list #'list (atake noppts opsdeck) (alast noppts opsdeck)))
                  (hval (apply #'cl-poker-eval:eval-hand-var (flatten (cons board hole))))
-                 (opvals (map 'list #'(lambda (oh) (apply #'cl-poker-eval:eval-hand-var (flatten (cons board oh)))) ophs)) (maxop (apply #'max opvals)))
+                 (opvals (map 'list #'(lambda (oh) (apply #'cl-poker-eval:eval-hand-var (flatten (cons board oh)))) ophs))
+                 (maxop (apply #'max opvals)))
+            (declare (type fixnum maxop hval np pp ep))
             (cond
               ((< hval maxop) (incf np))
               ((> hval maxop) (incf pp))
