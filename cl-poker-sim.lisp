@@ -2,14 +2,14 @@
 
 (defun ppot (hole board)
   "Calculates the ppot++ for given hole and board"
-  (let* ((cards (loop for c from 0 upto 51 collect c))
+  (let* ((cards (loop for c of-type fixnum from 0 upto 51 collect c))
          (deck (nset-difference cards (flatten (cons hole board)))))
     (ppot++ hole board deck)))
 
 
 (defun sim (hole &rest ophs)
   "Calculates win/tie/lose for given hole cards against given opponent hold cards"
-  (let* ((cards (loop for c from 0 upto 51 collect c))
+  (let* ((cards (loop for c of-type fixnum from 0 upto 51 collect c))
         (deck (set-difference cards (flatten (cons hole ophs))))
         (boards (combination 5 deck))
         (win 0) (lose 0) (tie 0))
@@ -30,7 +30,7 @@
            (type fixnum n noppts))
   (let* ((cards (make-array 50 :element-type 'fixnum :initial-contents (nset-difference (loop for c from 0 upto 51 collect c) hole)))
          (pp 0) (np 0) (ep 0))
-    (loop for i from 1 upto n do
+    (loop for i of-type fixnum from 1 upto n do
           (let* ((deck (ashuffle cards))
                  (board (coerce (atake 5 deck) 'list))
                  (opsdeck (alast 45 deck))
@@ -66,7 +66,7 @@
 (defun ppot+ (hole board deck)
   "Calculates the positive potential for next card only"
   (let ((pp 0) (np 0) (ep 0))
-     (loop for c in deck do
+     (loop for c of-type fixnum in deck do
       (multiple-value-bind (pp2 ep2 np2) 
         (ppot- hole (flatten (cons board c)) (set-difference deck (list c)))
         (setf pp (+ pp pp2))

@@ -16,7 +16,7 @@
            (type (simple-array fixnum (*)) s))
   (let ((len (length s)))
     (declare (type fixnum len))
-    (loop for i from len downto 2
+    (loop for i of-type fixnum from len downto 2
           do (rotatef (aref s (random i))
                       (aref s (1- i)))))
    s)
@@ -38,7 +38,7 @@
   (declare (optimize (speed 3) (safety 0) (debug 0))
            (type fixnum n) (type (simple-array fixnum (*)) l))
   (let ((r (make-array n :element-type 'fixnum)))
-    (loop for i from 0 upto (1- n)
+    (loop for i of-type fixnum from 0 upto (1- n)
           do (setf (aref r i) (aref l i)))
     r))
 
@@ -48,7 +48,7 @@
            (type fixnum n) (type (simple-array fixnum (*)) l))
   (let ((r (make-array n :element-type 'fixnum))
         (len (1- (length l))))
-    (loop for i from len downto (- len n)
+    (loop for i of-type fixnum from len downto (- len n)
           as index from (1- n) downto 0
           do (setf (aref r index) (aref l i)))
     r))
