@@ -28,8 +28,8 @@
   "Monte-carlo sim of n hands using hole cards against noppts opponents"
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
            (type fixnum n noppts))
-  (let* ((cards (make-array 50 :element-type 'fixnum :initial-contents (nset-difference (loop for c from 0 upto 51 collect c) hole)))
-         (pp 0) (np 0) (ep 0))
+  (let* ((cards (make-array 50 :element-type 'fixnum :initial-contents (nset-difference (loop for c of-type fixnum from 0 upto 51 collect c) hole)))
+         (pp 0) (np 0) (ep 0) (tp 0))
     (loop for i of-type fixnum from 1 upto n do
           (let* ((deck (ashuffle cards))
                  (board (coerce (atake 5 deck) 'list))
@@ -44,8 +44,35 @@
               ((< hval maxop) (incf np))
               ((> hval maxop) (incf pp))
               ((= hval maxop) (incf ep)))))
-    (values pp ep np)))
+    (setf tp (+ pp ep np))
+    (values 
+      (float (/ pp tp)) 
+      (float (/ ep tp))
+      (float (/ np tp)))))
 
+(defun noppts-sim (n hole board noppts)
+  "Monte-carlo sim of n hands using hole cards and board against noppts opponents"
+  (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
+                     (type fixnum n noppts))
+  (let* ((cards (make-array 47 :element-type 'fixnum :initial-contents (nset-difference (loop for c of-type fixnum from 0 upto 51 collect c) (flatten (cons board hole)))))
+         (hval (apply #'cl-poker-eval:eval-hand-var (flatten (cons board hole))))
+         (pp 0) (np 0) (ep 0) (tp 0))
+    (loop for i of-type fixnum from 1 upto n do
+          (let* ((opsdeck (ashuffle cards))
+                 (ophs (loop for x across (atake noppts opsdeck)
+                             for y across (alast noppts opsdeck) collect (list x y)))
+                 (opvals (loop for oh in ophs collect (apply #'cl-poker-eval:eval-hand-var (flatten (cons board oh)))))
+                 (maxop (apply #'max opvals)))
+            (declare (type fixnum maxop hval np pp ep))
+            (cond
+              ((< hval maxop) (incf np))
+              ((> hval maxop) (incf pp))
+              ((= hval maxop) (incf ep)))))
+    (setf tp (+ pp ep np))
+    (values
+      (float (/ pp tp))
+      (float (/ ep tp))
+      (float (/ np tp)))))
 
 
 (defun ppot- (hole board deck)
