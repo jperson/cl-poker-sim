@@ -50,7 +50,6 @@
              ((= hval maxoh) (incf tie)))))
   (values win tie lose)))
 
-
 (defun monte-carlo-sim (n hole noppts)
   "Monte-carlo sim of n hands using hole cards against noppts opponents"
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
@@ -58,11 +57,9 @@
   (let* ((cards (make-array 50 :element-type 'fixnum :initial-contents (nset-difference (loop for c of-type fixnum from 0 upto 51 collect c) hole)))
          (pp 0) (np 0) (ep 0) (tp 0))
     (loop for i of-type fixnum from 1 upto n do
-          (let* ((deck (ashuffle cards))
-                 (board (coerce (atake 5 deck) 'list))
-                 (opsdeck (alast 45 deck))
-                 (ophs (loop for x across (atake noppts opsdeck)
-                             for y across (alast noppts opsdeck) collect (list x y)))
+          (let* ((deck (card-stream (ashuffle cards)))
+                 (board (deck-deal deck 5))
+                 (ophs (loop for x from 1 to noppts collect (list (funcall deck) (funcall deck))))
                  (hval (apply #'cl-poker-eval:eval-hand-var (flatten (cons board hole))))
                  (opvals (loop for oh in ophs collect (apply #'cl-poker-eval:eval-hand-var (flatten (cons board oh)))))
                  (maxop (apply #'max opvals)))
@@ -77,6 +74,7 @@
       (float (/ ep tp))
       (float (/ np tp)))))
 
+
 (defun noppts-sim (n hole board noppts)
   "Monte-carlo sim of n hands using hole cards and board against noppts opponents"
   (declare (optimize (speed 3) (safety 0) (debug 0) (compilation-speed 0))
@@ -85,9 +83,8 @@
          (hval (apply #'cl-poker-eval:eval-hand-var (flatten (cons board hole))))
          (pp 0) (np 0) (ep 0) (tp 0))
     (loop for i of-type fixnum from 1 upto n do
-          (let* ((opsdeck (ashuffle cards))
-                 (ophs (loop for x across (atake noppts opsdeck)
-                             for y across (alast noppts opsdeck) collect (list x y)))
+          (let* ((opsdeck (card-stream (ashuffle cards)))
+                 (ophs (loop for x from 1 to noppts collect (list (funcall opsdeck) (funcall opsdeck))))
                  (opvals (loop for oh in ophs collect (apply #'cl-poker-eval:eval-hand-var (flatten (cons board oh)))))
                  (maxop (apply #'max opvals)))
             (declare (type fixnum maxop hval np pp ep))

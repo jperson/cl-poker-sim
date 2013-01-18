@@ -79,3 +79,15 @@
           as index from (1- n) downto 0
           do (setf (aref r index) (aref l i)))
     r))
+
+(defun card-stream (d)
+  "Creates a deck stream, does not check bounds"
+  (let ((ds d) (cur 0))
+    (lambda ()
+      (let ((r (aref ds cur)))
+        (setf cur (1+ cur))
+        r))))
+
+(defun deck-deal (d n)
+  "Deal n cards from card-stream d"
+  (loop for i from 1 to n collect (funcall d)))
